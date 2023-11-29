@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="member_table.css" />
+    <style>
+      #dlgMember {
+        display: block;
+        padding: 50px;
+        width: 30%;
+        background-color: lightblue;
+        border-radius: 10px;
+        margin: 15% auto;
+        transition: all 300ms ease;
+      }
+
+      .off {
+        transform: translateY(-400px);
+      }
+
+      .dlgButtons {
+        display: flex;
+        justify-content: center;
+      }
+
+      .dlgButtons button {
+        flex: 30% 1 1;
+      }
+
+      .box {
+        width: 50px;
+        height: 50px;
+        border: 1px solid black;
+      }
+
+      .modal {
+        display: none;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%;
+        /* Full width */
+        height: 100%;
+        /* Full height */
+        overflow: auto;
+        /* Enable scroll if needed */
+        background-color: rgb(0, 0, 0);
+        /* Fallback color */
+        background-color: rgba(0, 0, 0, 0.4);
+        /* Black w/ opacity */
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Member Manager</h1>
+
+    <button id="btnAddMember">Add Member</button>
+
+    <table id="tblMembers" class="data-table">
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Active</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="modal" id="modal">
+      <div id="dlgMember" class="off">
+        <span class="close">&times;</span>
+        <div>
+          Name:<input id="txtName" /><br />
+          Email:<input id="txtEmail" /><br />
+          Active: <input type="checkbox" id="chkActive" /><br />
+        </div>
+        <div class="dlgButtons">
+          <button id="btnSave">Save</button>
+          <button id="btnCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+      let members = [];
+
+      let url = "https://devops2023.co.uk/members";
+
+      function deleteMember(id) {
+        if (confirm(`Are you sure you want to delete ${id}?`)) {
+          $.ajax({
+            url: `${url}/${id}`,
+            method: "DELETE",
+
+            success: () => {
+              $(`#tr_${id}`).remove();
+            },
+            error: () => {
+              alert("something went wrong");
+            },
+          });
+        }
+      }
+
+      function editMember(id) {
+        let name = $(`#tr_${id} td:nth-child(2)`).html();
+        $(`#tr_${id} td:nth-child(2)`).html(
+          `<input id="txtName_${id}" value="${name}" original-value="${name}">`
+        );
+        let email = $(`#tr_${id} td:nth-child(3)`).html();
+        $(`#tr_${id} td:nth-child(3)`).html(
+          `<input id="txtEmail_${id}" value="${email}" original-value="${email}">`
+        );
+        let active = $(`#tr_${id} td:nth-child(4)`).html() == "true";
+        $(`#tr_${id} td:nth-child(4)`).html(
+          `<input type="checkbox" id="chkActive_${id}" ${
+            active ? "checked" : ""
+          } original-value="${active}">`
+        );
+
+        configureButtons(id, false);
+      }
+
+      function configureButtons(id, viewMode) {
+        // viewMode = true => viewing
+        // viewMode = false => editing
+        $(`#btnEdit_${id}`).prop("disabled", !viewMode);
+        $(`#btnSave_${id}`).prop("disabled", viewMode);
+        $(`#btnCancel_${id}`).prop("disabled", viewMode);
+      }
+
+      function saveMember(id) {
+        "";
+        let memberToSave = {
+          id: id,
+          name: $(`#txtName_${id}`).val(),
+          email: $(`#txtEmail_${id}`).val(),
+          active: $(`#chkActive_${id}`).prop("checked"),
+        };
+        $.ajax({
+          url: `${url}/${id}`,
+          method: "PUT",
+          data: JSON.stringify(memberToSave),
+          contentType: "application/json",
+
+          success: () => {
+            $(`#tr_${id} td:nth-child(2)`).html(memberToSave.name);
+            $(`#tr_${id} td:nth-child(3)`).html(memberToSave.email);
+            $(`#tr_${id} td:nth-child(4)`).html(
+              memberToSave.active ? "true" : "false"
+            );
+            if (memberToSave.active) {
+              $(`#tr_${id}`).addClass("active");
+              $(`#tr_${id}`).removeClass("inactive");
+            } else {
+              $(`#tr_${id}`).addClass("inactive");
+              $(`#tr_${id}`).removeClass("active");
+            }
+
+            configureButtons(id, true);
+          },
+          error: (error) => {},
+        });
+      }
+
+      function cancelEdit(id) {
+        // the the values back into the table
+        let originalName = $(`#txtName_${id}`).attr("original-value");
+        $(`#tr_${id} td:nth-child(2)`).html(originalName);
+        let originalEmail = $(`#txtEmail_${id}`).attr("original-value");
+        $(`#tr_${id} td:nth-child(3)`).html(originalEmail);
+
+        let originalActive = $(`#chkActive_${id}`).attr("original-value");
+        $(`#tr_${id} td:nth-child(4)`).html(originalActive);
+
+        configureButtons(id, true);
+      }
+
+      function formatMemberForTable(member) {
+        return `<tr id="tr_${member.id}" class="${
+          member.active ? "active" : "inactive"
+        }">
+                        <td>${member.id}</td>
+                        <td>${member.name}</td>
+                        <td>${member.email}</td>
+                        <td>${member.active}</td>
+                        <td>
+                            <button id="btnDelete_${
+                              member.id
+                            }" onclick="deleteMember(${
+          member.id
+        })">Delete</button>
+                            <button id="btnEdit_${
+                              member.id
+                            }" onclick="editMember(${member.id})">Edit</button>
+                            <button id="btnSave_${
+                              member.id
+                            }" onclick="saveMember(${
+          member.id
+        })" disabled>Save</button>
+                            <button id="btnCancel_${
+                              member.id
+                            }" onclick="cancelEdit(${
+          member.id
+        })" disabled>Cancel</button>
+                        </td>
+                    </tr>`;
+      }
+      function addRowToTable(tr) {
+        $("#tblMembers tbody").append(tr);
+      }
+
+      function populateTable() {
+        console.log("populateTable()");
+        $("#tblMembers tbody tr").remove();
+        members
+          .map((member) => formatMemberForTable(member))
+          .forEach((tr) => addRowToTable(tr));
+      }
+      $(document).ready(function () {
+        $.getJSON(url, (membersData) => {
+          members = membersData;
+
+          console.log(members);
+          populateTable();
+        });
+      });
+
+      function showDialog() {
+        $(".modal").css("display", "block");
+        setTimeout(() => {
+          $("#dlgMember").removeClass("off");
+        }, 1);
+      }
+      function hideDialog() {
+        $(".modal").css("display", "none");
+        $("#dlgMember").addClass("off");
+      }
+      $("#btnAddMember").on("click", () => {
+        showDialog();
+      });
+
+      $("#btnCancel").on("click", () => {
+        hideDialog();
+      });
+
+      $(".close").on("click", () => {
+        hideDialog();
+      });
+
+      $(".modal").on("click", (event) => {
+        if (event.target.id == "modal") {
+          hideDialog();
+        }
+      });
+
+      $("#btnSave").on("click", () => {
+        let newUser = {
+          name: $("#txtName").val(),
+          email: $("#txtEmail").val(),
+          active: $("#chkActive").prop("checked"),
+        };
+
+        $.ajax({
+          url: url,
+          method: "POST",
+          data: JSON.stringify(newUser),
+          contentType: "application/json",
+
+          success: (addedUser) => {
+            addRowToTable(formatMemberForTable(addedUser));
+
+            $(".modal").css("display", "none");
+            $("#dlgMember").addClass("off");
+          },
+          error: (error) => {
+            alert(error);
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
