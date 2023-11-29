@@ -1,0 +1,30 @@
+h1 {
+    text-align: center;
+}
+
+.data-table {
+    border: 1px solid black;
+    width: 100%;
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.data-table thead tr {
+    background-color: lightgray;
+}
+
+.data-table thead th {
+    padding: 10px;
+}
+
+.data-table tbody td {
+    padding: 10px;
+}
+
+.data-table tbody tr:hover {
+    background-color: lightblue;
+}
+
+.active {
+    background-color: lightgreen;
+}
